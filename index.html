@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DB Schenker - EV Launch Event | Quiz Time</title>
+    <title>Singapore - EV Launch Event | Quiz Time</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -11,7 +11,7 @@
             padding: 20px; 
             background-color: #008080; 
             color: white;
-            font-size: calc(1rem + 0.5vw); /* Responsive font size */
+            font-size: calc(1rem + 0.5vw);
         }
         .container { 
             max-width: 400px; 
@@ -21,14 +21,13 @@
             border-radius: 10px; 
             color: black;
         }
-        h1, h2 { color: #d40000; }
-        canvas { 
+        h1, h2 { color: #eeeeee; }
+        canvas, video { 
             border: 1px solid #000; 
-            width: 100%; 
-            height: 150px; 
-            background: lightgrey; 
-            touch-action: none; 
+            background: white; 
         }
+        video { width: 300px; height: 200px; }
+        canvas { width: 100%; height: 150px; touch-action: none; }
         .hidden { display: none; }
         .correct { background-color: lightgreen; }
         .incorrect { background-color: lightcoral; }
@@ -37,18 +36,56 @@
             padding: 10px; 
             border: none; 
             cursor: pointer; 
-            font-size: inherit; /* Inherit responsive font size */
+            font-size: inherit;
         }
         .next-btn { background-color: #000; color: white; }
+        #final-image { max-width: 100%; margin-top: 10px; }
+        .logo { 
+            width: 150px; /* Adjust size as needed */
+            margin-bottom: 10px; 
+        }
+      
+              /* Pop-up styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .popup-box {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 90%;
+            font-size: 1.5rem;
+        }
+      
     </style>
 </head>
 <body>
-    <h1>DB Schenker - EV Launch Event</h1>
+        <!-- Pop-up message -->
+    <div class="popup-overlay" id="popup">
+        <div class="popup-box">
+            <p><strong>No personal data is stored or recorded.</strong></p>
+            <button onclick="closePopup()">Acknowledge</button>
+        </div>
+    </div>
+    
+    <img src="db-schenker-logo.png" alt="DB Schenker Logo" class="logo"> <!-- Logo added here -->
+    <h1>Singapore - EV Launch Event</h1>
     <h2>Quiz Time</h2>
     <div class="container">
         <div id="question-section">
             <p id="question">Question 1:</p>
             <div id="answer-container"></div>
+            <p id="result-message"></p>
             <button class="next-btn" onclick="nextQuestion()">Next</button>
         </div>
 
@@ -59,34 +96,48 @@
             <button onclick="submitSignature()">Submit</button>
         </div>
 
+        <div id="photo-section" class="hidden">
+            <p>Capture your photo in <span id="countdown">10</span> seconds...</p>
+            <video id="video" autoplay></video>
+        </div>
+
         <div id="bye-section" class="hidden">
+            <canvas id="final-canvas" class="hidden"></canvas>
+            <img id="final-image" src="" alt="Final Image">
             <p>Thank you for attending the event</p>
-            <p>Capture a screenshot or show this message at the counter to collect your token of appreciation</p>
-            <p>Here is your signature:</p>
-            <img id="signature-image" src="" alt="Signature">
+            <p>Long Press to save the image or show this message at the counter to collect your token of appreciation</p>
         </div>
     </div>
 
     <script>
+       function closePopup() {
+            document.getElementById("popup").style.display = "none";
+        }
+
+        window.onload = function () {
+            document.getElementById("popup").style.display = "flex";
+        };
         const questions = [
-            { text: "Document for cross-border trucking?", options: ["Passport", "Hotel Booking", "Customs Clearance", "Tour guide"], correct: "Customs Clearance" },
-            { text: "DB Schenker headquarters location?", options: ["Germany", "Singapore", "India", "China"], correct: "Germany" },
-            { text: "What is the largest ocean on Earth?", options: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"], correct: "Pacific Ocean" }
+            { text: "What is the primary document required for customs clearance in cross-border trade?", options: ["Invoice", "Bill of Lading", "Customs Declaration", "Packing List"], correct: "Customs Declaration" },
+            { text: "What is a common challenge faced in cross-border business?", options: ["Language barriers", "Currency exchange rates", "Regulatory compliance", "All of the above"], correct: "All of the above" },
+            { text: "Which term refers to the taxes imposed on imported goods?", options: ["Tariffs", "Quotas", "Subsidies", "Duties"], correct: "Tariffs" }
         ];
         let currentQuestion = 0;
+        let drawing = false;
         const questionElem = document.getElementById("question");
         const answerContainer = document.getElementById("answer-container");
-        const questionSection = document.getElementById("question-section");
-        const signatureSection = document.getElementById("signature-section");
-        const byeSection = document.getElementById("bye-section");
-        const canvas = document.getElementById("signature-pad");
-        const ctx = canvas.getContext("2d");
-        let drawing = false;
+        const resultMessage = document.getElementById("result-message");
+        const signatureCanvas = document.getElementById("signature-pad");
+        const signatureCtx = signatureCanvas.getContext("2d");
+        const finalCanvas = document.getElementById("final-canvas");
+        const finalCtx = finalCanvas.getContext("2d");
+        const video = document.getElementById("video");
 
         function loadQuestion() {
             if (currentQuestion < questions.length) {
                 questionElem.innerText = `Question ${currentQuestion + 1}: ${questions[currentQuestion].text}`;
                 answerContainer.innerHTML = "";
+                resultMessage.innerText = "";
                 questions[currentQuestion].options.forEach(option => {
                     const button = document.createElement("button");
                     button.innerText = option;
@@ -94,13 +145,14 @@
                     answerContainer.appendChild(button);
                 });
             } else {
-                questionSection.classList.add("hidden");
-                signatureSection.classList.remove("hidden");
+                document.getElementById("question-section").classList.add("hidden");
+                document.getElementById("signature-section").classList.remove("hidden");
             }
         }
 
         function checkAnswer(selected) {
             answerContainer.innerHTML = "";
+            resultMessage.innerText = "";
             questions[currentQuestion].options.forEach(option => {
                 const button = document.createElement("button");
                 button.innerText = option;
@@ -111,6 +163,14 @@
                 }
                 answerContainer.appendChild(button);
             });
+
+            if (selected === questions[currentQuestion].correct) {
+                resultMessage.innerText = "Correct!";
+                resultMessage.style.color = "green";
+            } else {
+                resultMessage.innerText = "Wrong! The correct answer is: " + questions[currentQuestion].correct;
+                resultMessage.style.color = "red";
+            }
         }
 
         function nextQuestion() {
@@ -120,54 +180,70 @@
 
         loadQuestion();
 
+        signatureCanvas.addEventListener("pointerdown", startDrawing);
+        signatureCanvas.addEventListener("pointermove", draw);
+        signatureCanvas.addEventListener("pointerup", stopDrawing);
+
         function startDrawing(event) {
-            event.preventDefault();
             drawing = true;
-            ctx.beginPath();
-            const pos = getPosition(event);
-            ctx.moveTo(pos.x, pos.y);
+            signatureCtx.beginPath();
+            signatureCtx.moveTo(event.offsetX, event.offsetY);
+            signatureCtx.strokeStyle = "red";
+            signatureCtx.lineWidth = 2;
         }
 
         function draw(event) {
             if (!drawing) return;
-            event.preventDefault();
-            const pos = getPosition(event);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
+            signatureCtx.lineTo(event.offsetX, event.offsetY);
+            signatureCtx.stroke();
         }
 
-        function stopDrawing(event) {
-            if (!drawing) return;
-            event.preventDefault();
+        function stopDrawing() {
             drawing = false;
-            ctx.closePath();
-        }
-
-        function getPosition(event) {
-            const rect = canvas.getBoundingClientRect();
-            const x = event.touches ? event.touches[0].clientX - rect.left : event.offsetX;
-            const y = event.touches ? event.touches[0].clientY - rect.top : event.offsetY;
-            return { x, y };
         }
 
         function clearSignature() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
         }
 
         function submitSignature() {
-            const signatureImage = document.getElementById("signature-image");
-            signatureImage.src = canvas.toDataURL("image/png");
-            signatureSection.classList.add("hidden");
-            byeSection.classList.remove("hidden");
+            document.getElementById("signature-section").classList.add("hidden");
+            document.getElementById("photo-section").classList.remove("hidden");
+
+            navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+                video.srcObject = stream;
+                startCountdown();
+            });
         }
 
-        canvas.addEventListener("mousedown", startDrawing);
-        canvas.addEventListener("mousemove", draw);
-        canvas.addEventListener("mouseup", stopDrawing);
-        canvas.addEventListener("mouseleave", stopDrawing);
-        canvas.addEventListener("touchstart", startDrawing);
-        canvas.addEventListener("touchmove", draw);
-        canvas.addEventListener("touchend", stopDrawing);
+        function startCountdown() {
+            let countdown = 1;
+            const countdownElem = document.getElementById("countdown");
+
+            const timer = setInterval(() => {
+                countdown--;
+                countdownElem.innerText = countdown;
+
+                if (countdown === 0) {
+                    clearInterval(timer);
+                    capturePhoto();
+                }
+            }, 1000);
+        }
+
+        function capturePhoto() {
+            finalCanvas.width = 400;
+            finalCanvas.height = 500;
+            finalCtx.drawImage(video, 0, 0, finalCanvas.width, finalCanvas.height);
+            finalCtx.drawImage(signatureCanvas, finalCanvas.width - 80, finalCanvas.height - 50, 80, 40);
+            finalCtx.fillStyle = "white";
+            finalCtx.font = "12px Arial";
+            finalCtx.fillText("DB Schenker Singapore - EV Launch 27/03/25", 5, 490);
+
+            document.getElementById("final-image").src = finalCanvas.toDataURL("image/png");
+            document.getElementById("photo-section").classList.add("hidden");
+            document.getElementById("bye-section").classList.remove("hidden");
+        }
     </script>
 </body>
 </html>
