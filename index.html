@@ -5,14 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DB Schenker - EV Launch Event | Quiz Time</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #008080; color: white; }
-        .container { max-width: 400px; margin: auto; background: lightgrey; padding: 20px; border-radius: 10px; color: black; }
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 20px; 
+            background-color: #008080; 
+            color: white;
+            font-size: calc(1rem + 0.5vw); /* Responsive font size */
+        }
+        .container { 
+            max-width: 400px; 
+            margin: auto; 
+            background: lightgrey; 
+            padding: 20px; 
+            border-radius: 10px; 
+            color: black;
+        }
         h1, h2 { color: #d40000; }
-        canvas { border: 1px solid #000; width: 100%; height: 150px; background: lightgrey; }
+        canvas { 
+            border: 1px solid #000; 
+            width: 100%; 
+            height: 150px; 
+            background: lightgrey; 
+            touch-action: none; 
+        }
         .hidden { display: none; }
         .correct { background-color: lightgreen; }
         .incorrect { background-color: lightcoral; }
-        button { margin: 5px; padding: 10px; border: none; cursor: pointer; }
+        button { 
+            margin: 5px; 
+            padding: 10px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: inherit; /* Inherit responsive font size */
+        }
         .next-btn { background-color: #000; color: white; }
     </style>
 </head>
@@ -95,20 +121,33 @@
         loadQuestion();
 
         function startDrawing(event) {
+            event.preventDefault();
             drawing = true;
             ctx.beginPath();
-            ctx.moveTo(event.offsetX, event.offsetY);
+            const pos = getPosition(event);
+            ctx.moveTo(pos.x, pos.y);
         }
 
         function draw(event) {
             if (!drawing) return;
-            ctx.lineTo(event.offsetX, event.offsetY);
+            event.preventDefault();
+            const pos = getPosition(event);
+            ctx.lineTo(pos.x, pos.y);
             ctx.stroke();
         }
 
-        function stopDrawing() {
+        function stopDrawing(event) {
+            if (!drawing) return;
+            event.preventDefault();
             drawing = false;
             ctx.closePath();
+        }
+
+        function getPosition(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.touches ? event.touches[0].clientX - rect.left : event.offsetX;
+            const y = event.touches ? event.touches[0].clientY - rect.top : event.offsetY;
+            return { x, y };
         }
 
         function clearSignature() {
@@ -126,6 +165,9 @@
         canvas.addEventListener("mousemove", draw);
         canvas.addEventListener("mouseup", stopDrawing);
         canvas.addEventListener("mouseleave", stopDrawing);
+        canvas.addEventListener("touchstart", startDrawing);
+        canvas.addEventListener("touchmove", draw);
+        canvas.addEventListener("touchend", stopDrawing);
     </script>
 </body>
 </html>
