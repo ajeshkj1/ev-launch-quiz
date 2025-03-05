@@ -232,17 +232,38 @@
         }
 
         function capturePhoto() {
+            const video = document.getElementById("video");
+            const finalCanvas = document.getElementById("final-canvas");
+            const finalCtx = finalCanvas.getContext("2d");
+
             finalCanvas.width = 300;
             finalCanvas.height = 350;
+
+            // Draw video frame on canvas
             finalCtx.drawImage(video, 0, 0, finalCanvas.width, finalCanvas.height);
-            finalCtx.drawImage(signatureCanvas, finalCanvas.width - 80, finalCanvas.height - 50, 80, 40);
+
+            // Draw signature onto the canvas
+            finalCtx.drawImage(signatureCanvas, finalCanvas.width - 120, finalCanvas.height - 80, 100, 50);
+
+            // Add text overlay
             finalCtx.fillStyle = "white";
             finalCtx.font = "12px Arial";
-            finalCtx.fillText("DB Schenker Singapore - EV Launch 27/03/25", 5, 490);
+            finalCtx.fillText("DB Schenker Singapore - EV Launch 27/03/25", 10, finalCanvas.height - 10);
 
-            document.getElementById("final-image").src = finalCanvas.toDataURL("image/png");
+            // Convert canvas to an image
+            const finalImage = document.getElementById("final-image");
+            finalImage.src = finalCanvas.toDataURL("image/png");
+            finalImage.classList.remove("hidden");
+
+            // Hide photo section and show final image
             document.getElementById("photo-section").classList.add("hidden");
             document.getElementById("bye-section").classList.remove("hidden");
+
+            // Stop video stream
+            const stream = video.srcObject;
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+            video.srcObject = null;
         }
     </script>
 </body>
