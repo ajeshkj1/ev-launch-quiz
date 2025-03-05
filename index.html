@@ -232,8 +232,8 @@
         }
 
         function capturePhoto() {
-            finalCanvas.width = 400;
-            finalCanvas.height = 500;
+            finalCanvas.width = 300;
+            finalCanvas.height = 350;
             finalCtx.drawImage(video, 0, 0, finalCanvas.width, finalCanvas.height);
             finalCtx.drawImage(signatureCanvas, finalCanvas.width - 80, finalCanvas.height - 50, 80, 40);
             finalCtx.fillStyle = "white";
